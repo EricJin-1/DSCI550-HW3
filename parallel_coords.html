@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Parallel Coordinates Plot</title>
+  <script src="https://d3js.org/d3.v6.min.js"></script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      font-family: sans-serif;
+      position: relative;
+      background: #fff;
+    }
+    #back-button {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      padding: 6px 12px;
+      font-size: 14px;
+      background-color: #f5f5f5;
+      color: #000;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      z-index: 10;
+    }
+    #back-button:hover { background-color: #e0e0e0; }
+    h1 {
+      text-align: center;
+      padding: 10px;
+      font-size: 32px;
+      color: #2c3e50;
+    }
+    /* Description section */
+    #description-section {
+      width: 95vw;
+      max-width: 1400px;
+      margin-bottom: 4vh;
+      text-align: center;
+    }
+    #description-section h2 {
+      margin-bottom: 1vh;
+      font-size: clamp(1rem, 2.5vw, 1.5rem);
+      color: #2c3e50;
+    }
+    #description-content {
+      font-size: clamp(1rem, 2vw, 1.25rem);
+      color: #333;
+    }
+    #description-content p {
+      margin: 0 0 1em;
+    }
+    .buttons {
+      margin-top: 2vh;
+      margin-bottom: 10px;
+    }
+    .buttons button {
+      margin: 0 5px;
+      padding: 6px 12px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    #chart-container {
+      width: 95vw;
+      max-width: 1400px;
+    }
+    svg {
+      width: 100%;
+      height: 500px;
+    }
+    .axis path, .axis line {
+      fill: none;
+      stroke: #000;
+      shape-rendering: crispEdges;
+    }
+    .dimension text {
+      font-size: 12px;
+      fill: #333;
+    }
+    .background path {
+      stroke: #ddd;
+      fill: none;
+      opacity: 0.5;
+    }
+    .foreground path {
+      fill: none;
+      opacity: 0.7;
+    }
+    .legend {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 10px;
+      border: 1px solid #ccc;
+      font-size: 13px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 5px;
+    }
+    .legend-color {
+      width: 12px;
+      height: 12px;
+      margin-right: 6px;
+    }
+  </style>
+</head>
+<body>
+  <button id="back-button" onclick="window.location.href='index.html'">Back to Index</button>
+  <h1>Haunted Places Parallel Coordinates Plot</h1>
+  <section id="description-section">
+    <h2>Description</h2>
+    <div id="description-content">Loading description…</div>
+  </section>
+  <div class="buttons">
+    <button onclick="loadData('overall')">Overall Parallel Coordinates</button>
+    <button onclick="loadData('real')">Real Haunted Places Parallel Coordinates</button>
+  </div>
+  <div id="chart-container">
+    <svg id="chart"></svg>
+  </div>
+  <div class="legend" id="legend"></div>
+  <script>
+    fetch('parallel_coords_description.txt')
+      .then(res => res.ok ? res.text() : Promise.reject(res.status))
+      .then(text => {
+        const container = document.getElementById('description-content');
+        const paras = text.split(/\r?\n\r?\n+/);
+        container.innerHTML = paras
+          .map(p => `<p>${p.trim().replace(/\r?\n/g, '<br>')}</p>`)
+          .join('');
+      })
+      .catch(err => {
+        console.error('Description load error:', err);
+        document.getElementById('description-content').textContent = 'Description unavailable.';
+      });
+
+    const margin = { top: 30, right: 60, bottom: 10, left: 60 };
+    const containerDiv = document.getElementById('chart-container');
+    const width = containerDiv.clientWidth - margin.left - margin.right;
+    const height = 500 - margin.top - margin.bottom;
+
+    const svg = d3.select('#chart')
+      .attr('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
+      .append('g')
+      .attr('transform', `translate(${margin.left},${margin.top})`);
+
+    const dimensions = [
+      'Alcohol Abuse Rate',
+      'Haunted Places Witness Count',
+      'Amount of daylight',
+      'Max Temperature',
+      'Min Temperature',
+      'Precipitation'
+    ];
+
+    const colorMap = {
+      'Single Ghost': 'red',
+      'Several Ghosts': 'orange',
+      'Unknown': 'purple'
+    };
+    const types = ['Single Ghost', 'Several Ghosts', 'Unknown'];
+
+    function loadData(mode) {
+      const url = mode === 'real'
+        ? '../visualization_json/parallel_coords2.json'
+        : '../visualization_json/parallel_coords.json';
+      svg.selectAll('*').remove();
+      d3.select('#legend').html('');
+
+      d3.json(url).then(data => {
+        const yScales = {};
+        dimensions.forEach(dim => {
+          yScales[dim] = d3.scaleLinear()
+            .domain(d3.extent(data, d => d[dim]))
+            .range([height, 0]);
+        });
+
+        const xScale = d3.scalePoint()
+          .domain(dimensions)
+          .range([0, width]);
+
+        const lineGen = d3.line();
+        function path(d) {
+          return lineGen(dimensions.map(p => [ xScale(p), yScales[p](d[p]) ]));
+        }
+
+        svg.append('g')
+          .attr('class', 'foreground')
+          .selectAll('path')
+          .data(data)
+          .enter().append('path')
+          .attr('d', path)
+          .attr('stroke', d => colorMap[(d['Apparition Type II']||'Unknown').trim()] )
+          .attr('stroke-width', 1);
+
+        const dimGroups = svg.selectAll('.dimension')
+          .data(dimensions)
+          .enter().append('g')
+          .attr('class', 'dimension')
+          .attr('transform', d => `translate(${xScale(d)},0)`);
+
+        dimGroups.append('g')
+          .attr('class', 'axis')
+          .each(function(d) { d3.select(this).call(d3.axisLeft(yScales[d])); })
+          .append('text')
+          .style('text-anchor', 'middle')
+          .style('fill', '#000')
+          .attr('y', -9)
+          .attr('dy', '-0.5em')
+          .style('font-weight', 'bold')
+          .text(d => d);
+
+        const legend = d3.select('#legend');
+        types.forEach(t => {
+          const item = legend.append('div').attr('class', 'legend-item');
+          item.append('div')
+            .attr('class', 'legend-color')
+            .style('background', colorMap[t]);
+          item.append('span').text(t);
+        });
+      }).catch(err => console.error('Data load error:', err));
+    }
+
+    loadData('overall');
+  </script>
+</body>
+</html>
+
+
