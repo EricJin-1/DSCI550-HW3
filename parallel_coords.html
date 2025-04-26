@@ -171,8 +171,8 @@
 
     function loadData(mode) {
       const url = mode === 'real'
-        ? '../visualization_json/parallel_coords2.json'
-        : '../visualization_json/parallel_coords.json';
+        ? 'visualization_json/parallel_coords2.json'
+        : 'visualization_json/parallel_coords.json';
       svg.selectAll('*').remove();
       d3.select('#legend').html('');
 

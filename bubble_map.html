@@ -51,7 +51,7 @@
     </div>
   </div>
   <script>
-    let currentDataFile = "../visualization_json/bubble_map.json";
+    let currentDataFile = "visualization_json/bubble_map.json";
     let showUnknown    = true;
 
     // load description text as paragraphs
@@ -113,8 +113,8 @@
       })
       .catch(err => console.error("Error loading states topojson:", err));
 
-    document.getElementById("btn1").addEventListener("click", () => drawBubbles("../visualization_json/bubble_map.json"));
-    document.getElementById("btn2").addEventListener("click", () => drawBubbles("../visualization_json/bubble_map2.json"));
+    document.getElementById("btn1").addEventListener("click", () => drawBubbles("visualization_json/bubble_map.json"));
+    document.getElementById("btn2").addEventListener("click", () => drawBubbles("visualization_json/bubble_map2.json"));
     document.getElementById("btn-toggle-unknown").addEventListener("click", function() {
       showUnknown = !showUnknown;
       this.textContent = showUnknown ? "Hide Unknown" : "Show Unknown";

@@ -238,7 +238,7 @@
     }
 
     // Load data and prepare datasets
-    d3.json("../visualization_json/heatmap.json").then(data => {
+    d3.json("visualization_json/heatmap.json").then(data => {
       originalData = data;
       scaledData = data.map(d => ({ ...d, count: d.month === 3 ? 0 : d.count }));
       scaled2Data = data.map(d => {

@@ -88,7 +88,7 @@
     const width = 800;
     const height = 800;
 
-    d3.json('../visualization_json/bubbles.json').then(data => {
+    d3.json('visualization_json/bubbles.json').then(data => {
       const root = d3.pack()
         .size([width, height])
         .padding(3)(d3.hierarchy(data).sum(d => d.value));
